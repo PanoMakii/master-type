@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-accent="blue" data-caret="highlight" data-size="medium" data-hints="true">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Master Type</title>
+  <meta name="description" content="Master Type is a typing speed test with timed, page-based and 10-key modes.">
+  <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <script>
+    // Apply saved theme before first paint to avoid a flash
+    try {
+      var saved = JSON.parse(localStorage.getItem('mt_settings')) || {};
+      var root = document.documentElement;
+      var theme = saved.theme === 'system'
+        ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+        : saved.theme;
+      if (theme) root.dataset.theme = theme;
+      if (saved.accent) root.dataset.accent = saved.accent;
+    } catch (e) {}
+  </script>
+</head>
+<body data-phase="idle">
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <a class="brand" href="#test" aria-label="Master Type, go to the typing test">
+      <span class="brand-mark" aria-hidden="true"></span>MASTER TYPE
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#test" data-view="test">Test</a>
+      <a href="#leaderboard" data-view="leaderboard">Leaderboard</a>
+      <a href="#history" data-view="history">History</a>
+      <a href="#settings" data-view="settings">Settings</a>
+      <a href="#profile" data-view="profile">Profile</a>
+    </nav>
+    <button type="button" id="account-btn" class="account-btn">Log in</button>
+  </header>
+
+  <main id="main">
+
+    <!-- TEST -->
+    <section id="view-test" class="view">
+      <h1 class="visually-hidden">Typing test</h1>
+
+      <div id="config" class="config">
+        <div class="seg" id="mode-group" role="group" aria-label="Test type">
+          <button type="button" data-mode="time">Time</button>
+          <button type="button" data-mode="pages">Pages</button>
+          <button type="button" data-mode="tenkey">10-Key</button>
+        </div>
+        <div class="config-options" id="options"></div>
+        <label class="topic" id="topic-wrap">
+          <span>Topic</span>
+          <select id="topic" data-setting="topic" data-options="topics"></select>
+        </label>
+      </div>
+
+      <div id="stage" class="stage">
+        <div class="live" aria-label="Live statistics">
+          <div class="live-item">
+            <span class="live-label" id="clock-label">Time left</span>
+            <span class="live-value big" id="clock">1:00</span>
+          </div>
+          <div class="live-item">
+            <span class="live-label">WPM</span>
+            <span class="live-value" id="wpm">--</span>
+          </div>
+          <div class="live-item">
+            <span class="live-label">Accuracy</span>
+            <span class="live-value" id="accuracy">--</span>
+          </div>
+          <div class="live-item">
+            <span class="live-label">Errors</span>
+            <span class="live-value" id="errors">0</span>
+          </div>
+          <div class="live-item" id="progress-item" hidden>
+            <span class="live-label">Progress</span>
+            <span class="live-value" id="progress-text">0%</span>
+          </div>
+        </div>
+        <div class="bar" aria-hidden="true"><i id="bar-fill"></i></div>
+
+        <div class="typing-box" id="typing-box">
+          <div class="words" id="words" aria-label="Text to type"></div>
+          <textarea id="typing-input" class="typing-input" aria-label="Typing input"
+            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" rows="1"></textarea>
+          <div class="overlay idle" id="overlay" role="status" aria-live="assertive"></div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn primary" id="start-btn">Start</button>
+          <span class="hint">or press <kbd>Enter</kbd> &middot; <kbd>Esc</kbd> to cancel</span>
+          <span class="source" id="source"></span>
+        </div>
+      </div>
+
+      <section id="results" class="results" aria-label="Test results" hidden></section>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section id="view-leaderboard" class="view" hidden>
+      <h1 class="page-title">Leaderboard</h1>
+      <div class="seg" id="leaderboard-filters" role="group" aria-label="Filter leaderboard">
+        <button type="button" data-filter="all">All tests</button>
+        <button type="button" data-filter="time">Time-based</button>
+        <button type="button" data-filter="pages">Page-based</button>
+        <button type="button" data-filter="tenkey">10-key</button>
+        <button type="button" data-filter="advanced">Advanced</button>
+      </div>
+      <div id="leaderboard-body" class="table-wrap" aria-live="polite"></div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="view-history" class="view" hidden>
+      <h1 class="page-title">History</h1>
+      <div id="history-body"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view" hidden>
+      <h1 class="page-title">Settings</h1>
+      <div class="settings">
+
+        <section aria-labelledby="s-appearance">
+          <h2 class="section-title" id="s-appearance">Appearance</h2>
+          <div class="setting">
+            <div class="setting-text"><span id="l-theme">Theme</span><p class="desc">Dark, light, or follow your device.</p></div>
+            <div class="seg" role="group" aria-labelledby="l-theme" data-group="theme">
+              <button type="button" data-value="dark">Dark</button>
+              <button type="button" data-value="light">Light</button>
+              <button type="button" data-value="system">System</button>
+            </div>
+          </div>
+          <div class="setting">
+            <div class="setting-text"><span id="l-accent">Accent colour</span><p class="desc">Used for the caret, buttons and highlights.</p></div>
+            <div class="swatches" role="group" aria-labelledby="l-accent" data-group="accent">
+              <button type="button" class="swatch" data-value="blue" aria-label="Blue"></button>
+              <button type="button" class="swatch" data-value="green" aria-label="Green"></button>
+              <button type="button" class="swatch" data-value="amber" aria-label="Amber"></button>
+              <button type="button" class="swatch" data-value="violet" aria-label="Violet"></button>
+            </div>
+          </div>
+          <div class="setting">
+            <div class="setting-text"><span id="l-size">Text size</span><p class="desc">Size of the text you type.</p></div>
+            <div class="seg" role="group" aria-labelledby="l-size" data-group="fontSize">
+              <button type="button" data-value="small">Small</button>
+              <button type="button" data-value="medium">Medium</button>
+              <button type="button" data-value="large">Large</button>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="s-sound">
+          <h2 class="section-title" id="s-sound">Sound</h2>
+          <div class="setting">
+            <div class="setting-text"><label for="set-volume">Master volume</label></div>
+            <div class="range-wrap">
+              <input type="range" id="set-volume" min="0" max="100" step="5" data-setting="volume">
+              <output data-output="volume"></output>
+            </div>
+          </div>
+          <div class="setting">
+            <div class="setting-text"><label for="set-typingSound">Typing sound</label><p class="desc">A soft click on every correct key.</p></div>
+            <input type="checkbox" class="switch" id="set-typingSound" data-setting="typingSound">
+          </div>
+          <div class="setting">
+            <div class="setting-text"><label for="set-errorSound">Error sound</label><p class="desc">A low tone when you press a wrong key.</p></div>
+            <input type="checkbox" class="switch" id="set-errorSound" data-setting="errorSound">
+          </div>
+          <div class="setting">
+            <div class="setting-text"><label for="set-countdownSound">Countdown sound</label><p class="desc">Beeps during 3, 2, 1, START.</p></div>
+            <input type="checkbox" class="switch" id="set-countdownSound" data-setting="countdownSound">
+          </div>
+        </section>
+
+        <section aria-labelledby="s-typing">
+          <h2 class="section-title" id="s-typing">Typing</h2>
+          <div class="setting">
+            <div class="setting-text"><label for="set-language">Language</label><p class="desc">English uses the chosen topic. Other languages use random Wikipedia articles.</p></div>
+            <select id="set-language" data-setting="language">
+              <option value="en">English</option>
+              <option value="es">Español</option>
+              <option value="fr">Français</option>
+            </select>
+          </div>
+          <div class="setting">
+            <div class="setting-text"><label for="set-topic">Default topic</label><p class="desc">The topic used for time and page tests.</p></div>
+            <select id="set-topic" data-setting="topic" data-options="topics"></select>
+          </div>
+          <div class="setting">
+            <div class="setting-text"><label for="set-punctuation">Punctuation and capitals</label><p class="desc">Turn off for lowercase text with no punctuation.</p></div>
+            <input type="checkbox" class="switch" id="set-punctuation" data-setting="punctuation">
+          </div>
+          <div class="setting">
+            <div class="setting-text"><label for="set-caret">Caret style</label><p class="desc">How the current character is marked.</p></div>
+            <select id="set-caret" data-setting="caret">
+              <option value="highlight">Blue highlight</option>
+              <option value="underline">Underline</option>
+              <option value="bar">Bar</option>
+            </select>
+          </div>
+          <div class="setting">
+            <div class="setting-text"><label for="set-errorMode">Error behaviour</label><p class="desc">Continue after a mistake, or stay on the character until it is correct.</p></div>
+            <select id="set-errorMode" data-setting="errorMode">
+              <option value="continue">Continue typing</option>
+              <option value="stop">Stop on error</option>
+            </select>
+          </div>
+          <div class="setting">
+            <div class="setting-text"><label for="set-backspace">Allow backspace</label><p class="desc">Turn off for a strict test where mistakes cannot be deleted.</p></div>
+            <input type="checkbox" class="switch" id="set-backspace" data-setting="backspace">
+          </div>
+          <div class="setting">
+            <div class="setting-text"><label for="set-hints">Show keyboard hints</label><p class="desc">Shows the Enter and Esc shortcut hint under the text.</p></div>
+            <input type="checkbox" class="switch" id="set-hints" data-setting="hints">
+          </div>
+        </section>
+
+        <section aria-labelledby="s-profile">
+          <h2 class="section-title" id="s-profile">Profile</h2>
+          <div class="setting">
+            <div class="setting-text"><label for="set-name">Display name</label><p class="desc">Shown on the leaderboard and your profile.</p></div>
+            <input type="text" id="set-name" data-setting="name" maxlength="24" placeholder="Guest" autocomplete="nickname">
+          </div>
+          <div class="setting">
+            <div class="setting-text"><span>Reset settings</span><p class="desc">Restore every setting to its default value.</p></div>
+            <button type="button" class="btn" id="reset-settings">Reset</button>
+          </div>
+        </section>
+
+      </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section id="view-profile" class="view" hidden>
+      <h1 class="page-title">Profile</h1>
+      <div id="profile-body"></div>
+    </section>
+
+  </main>
+
+  <dialog id="auth-dialog" class="dialog" aria-labelledby="auth-title">
+    <div class="dialog-head">
+      <h2 id="auth-title">Log in</h2>
+      <button type="button" class="icon-btn" id="auth-close" aria-label="Close">&times;</button>
+    </div>
+    <p class="muted" id="auth-reason"></p>
+    <div class="seg" role="tablist" aria-label="Account">
+      <button type="button" role="tab" data-tab="login">Log in</button>
+      <button type="button" role="tab" data-tab="signup">Sign up</button>
+    </div>
+    <form id="auth-form" novalidate>
+      <label class="field" id="name-field">Name
+        <input name="name" autocomplete="name" maxlength="24">
+      </label>
+      <label class="field">Email
+        <input name="email" type="email" autocomplete="email">
+      </label>
+      <label class="field">Password
+        <input name="password" type="password" autocomplete="current-password">
+      </label>
+      <p class="form-error" id="auth-error" role="alert"></p>
+      <button type="submit" class="btn primary" id="auth-submit">Log in</button>
+    </form>
+    <p class="muted small">Accounts are kept in this browser only. A server can be connected later.</p>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/util.js"></script>
+  <script src="js/content.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/typing.js"></script>
+  <script src="js/results.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/leaderboard.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

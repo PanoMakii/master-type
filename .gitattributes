@@ -1,0 +1,24 @@
+# Normalize line endings for a cross-platform repo.
+* text=auto
+
+# Keep source and docs in LF for consistency.
+*.md text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.svg text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Preserve Windows shell scripts as CRLF.
+*.bat text eol=crlf
+
+# Binary files.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
